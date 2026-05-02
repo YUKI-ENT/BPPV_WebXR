@@ -45,3 +45,24 @@ canvas {
   margin: 0 0 12px;
   font-size: 18px;
 }
+
+.hud button {
+  width: 100%;
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hud button:hover {
+  background: #1d4ed8;
+}
+
+.error {
+  color: #fca5a5;
+  font-size: 12px;
+}
