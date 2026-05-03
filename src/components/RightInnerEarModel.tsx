@@ -1,4 +1,4 @@
-import { Text } from '@react-three/drei'
+import { Line, Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
@@ -122,10 +122,12 @@ export function RightInnerEarModel() {
   const model = useMemo(() => {
     // Coordinate system: X+ patient right, Y+ up, Z+ posterior, Z- anterior.
     const utricle = new THREE.Vector3(0, 0, 0)
-    const commonCrus = new THREE.Vector3(0.02, 0.72, 0.03)
-    const lateralUtricleEndTarget = new THREE.Vector3(0.27, 0.01, 0.12)
-    const posteriorAmpullaPort = new THREE.Vector3(-0.18, 0.0, 0.14)
-    const anteriorAmpullaPort = new THREE.Vector3(0.18, 0.0, -0.14)
+    const commonCrus = new THREE.Vector3(0.0, 0.46, 0.04)
+    const lateralUtricleEndTarget = new THREE.Vector3(0.34, 0.02, 0.13)
+    const posteriorUtricleEndTarget = new THREE.Vector3(-0.1, 0.24, 0.22)
+    const anteriorUtricleEndTarget = new THREE.Vector3(0.1, 0.24, -0.22)
+    const posteriorAmpullaPort = new THREE.Vector3(-0.27, -0.02, 0.16)
+    const anteriorAmpullaPort = new THREE.Vector3(0.27, -0.02, -0.16)
 
     const lateralTilt = THREE.MathUtils.degToRad(28)
     const lateralAxisU = new THREE.Vector3(1, 0, 0).normalize()
@@ -161,7 +163,7 @@ export function RightInnerEarModel() {
         215,
         88
       ),
-      commonCrus
+      posteriorUtricleEndTarget
     )
 
     const anteriorAxisU = new THREE.Vector3(0.44, 0, -0.9).normalize()
@@ -177,7 +179,7 @@ export function RightInnerEarModel() {
         215,
         88
       ),
-      commonCrus.clone().add(new THREE.Vector3(0.05, 0.02, -0.04))
+      anteriorUtricleEndTarget
     )
 
     const lateralCurve = makeCurve(lateralPoints)
@@ -196,10 +198,10 @@ export function RightInnerEarModel() {
       lateralUtricleEnd: lateralCurve.getPoint(1),
       lateralUtricleEndTarget,
       posteriorAmpulla: posteriorCurve.getPoint(0),
-      posteriorCommon: posteriorCurve.getPoint(1),
+      posteriorUtricleEnd: posteriorCurve.getPoint(1),
       posteriorAmpullaPort,
       anteriorAmpulla: anteriorCurve.getPoint(0),
-      anteriorCommon: anteriorCurve.getPoint(1),
+      anteriorUtricleEnd: anteriorCurve.getPoint(1),
       anteriorAmpullaPort,
       otolith,
     }
@@ -217,18 +219,33 @@ export function RightInnerEarModel() {
     group.position
       .copy(cameraPosition)
       .add(cameraForward.multiplyScalar(1.85))
-      .add(cameraUp.multiplyScalar(0.02))
+      .add(cameraUp.multiplyScalar(0.42))
     // Keep local Z+ posterior facing the viewer, so the model is seen from behind.
     group.quaternion.copy(cameraQuaternion)
   })
 
   return (
     <group ref={groupRef} scale={1.2}>
-      <mesh position={model.utricle} scale={[1.45, 0.75, 1.0]}>
-        <sphereGeometry args={[0.16, 36, 36]} />
-        <meshStandardMaterial color="#facc15" transparent opacity={0.8} />
+      <group position={[-0.78, -0.62, 0]}>
+        <Line points={[[0, 0, 0], [0.34, 0, 0]]} color="#ef4444" lineWidth={3} />
+        <Line points={[[0, 0, 0], [0, 0.34, 0]]} color="#22c55e" lineWidth={3} />
+        <Line points={[[0, 0, 0], [0, 0, 0.34]]} color="#3b82f6" lineWidth={3} />
+        <Text position={[0.42, 0, 0]} fontSize={0.07} color="#ef4444" anchorX="center">
+          X
+        </Text>
+        <Text position={[0, 0.42, 0]} fontSize={0.07} color="#22c55e" anchorX="center">
+          Y
+        </Text>
+        <Text position={[0, 0, 0.42]} fontSize={0.07} color="#3b82f6" anchorX="center">
+          Z
+        </Text>
+      </group>
+
+      <mesh position={model.utricle} scale={[1.9, 1.0, 1.28]}>
+        <sphereGeometry args={[0.2, 40, 40]} />
+        <meshStandardMaterial color="#facc15" transparent opacity={0.74} depthWrite={false} />
       </mesh>
-      <Text position={[0, -0.3, 0]} fontSize={0.09} color="#facc15" anchorX="center">
+      <Text position={[0, -0.36, 0]} fontSize={0.09} color="#facc15" anchorX="center">
         Utricle
       </Text>
 
@@ -250,11 +267,11 @@ export function RightInnerEarModel() {
       <ConnectorTube from={model.lateralAmpulla} to={model.utricle} color="#22c55e" opacity={0.2} />
       <ConnectorTube from={model.posteriorAmpulla} to={model.posteriorAmpullaPort} color="#3b82f6" />
       <ConnectorTube from={model.posteriorAmpullaPort} to={model.utricle} color="#3b82f6" opacity={0.24} />
-      <ConnectorTube from={model.posteriorCommon} to={model.commonCrus} color="#3b82f6" />
-      <ConnectorTube from={model.commonCrus} to={model.utricle} color="#fb923c" opacity={0.24} />
+      <ConnectorTube from={model.posteriorUtricleEnd} to={model.commonCrus} color="#3b82f6" />
       <ConnectorTube from={model.anteriorAmpulla} to={model.anteriorAmpullaPort} color="#ef4444" />
       <ConnectorTube from={model.anteriorAmpullaPort} to={model.utricle} color="#ef4444" opacity={0.24} />
-      <ConnectorTube from={model.anteriorCommon} to={model.commonCrus} color="#ef4444" />
+      <ConnectorTube from={model.anteriorUtricleEnd} to={model.commonCrus} color="#ef4444" />
+      <ConnectorTube from={model.commonCrus} to={model.utricle} color="#fb923c" radius={0.05} opacity={0.38} />
 
       <MarkerSphere position={model.lateralAmpulla} color="#86efac" radius={0.105} />
       <MarkerSphere position={model.posteriorAmpulla} color="#93c5fd" radius={0.11} />
