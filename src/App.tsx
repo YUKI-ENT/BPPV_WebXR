@@ -4,7 +4,7 @@ import { XR, createXRStore } from '@react-three/xr'
 import { useRef, useState } from 'react'
 import * as THREE from 'three'
 import { RightInnerEarModel } from './components/RightInnerEarModel'
-import { getHeadPose } from './utils/xrHeadPose'
+import { getHeadEuler, getHeadPose } from './utils/xrHeadPose'
 import './App.css'
 
 const xrStore = createXRStore()
@@ -21,16 +21,13 @@ function HeadPoseDebug({
   onChange: (angles: HeadAngles) => void
 }) {
   const lastUpdate = useRef(0)
-  const euler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
-  const headPosition = useRef(new THREE.Vector3())
-  const quaternion = useRef(new THREE.Quaternion())
+  const euler = useRef(new THREE.Euler())
 
   useFrame(({ camera, clock, gl }) => {
     const elapsed = clock.getElapsedTime()
     if (elapsed - lastUpdate.current < 0.12) return
 
-    getHeadPose(camera, gl, headPosition.current, quaternion.current)
-    euler.current.setFromQuaternion(quaternion.current, 'YXZ')
+    getHeadEuler(camera, gl, euler.current)
     onChange({
       x: euler.current.x,
       y: euler.current.y,
@@ -74,7 +71,9 @@ function ViewLockedDebugText({ angles }: { angles: HeadAngles }) {
         outlineColor="#111827"
         outlineWidth={0.006}
       >
-        {`X: ${angles.x.toFixed(2)} Y: ${angles.y.toFixed(2)} Z: ${angles.z.toFixed(2)}`}
+        {`X: ${THREE.MathUtils.radToDeg(angles.x).toFixed(2)} Y: ${THREE.MathUtils.radToDeg(
+          angles.y
+        ).toFixed(2)} Z: ${THREE.MathUtils.radToDeg(angles.z).toFixed(2)}`}
       </Text>
     </group>
   )
