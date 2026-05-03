@@ -122,6 +122,7 @@ export function RightInnerEarModel() {
     () => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI),
     []
   )
+  const contentRotation = useMemo(() => [0, Math.PI, 0] as [number, number, number], [])
 
   const model = useMemo(() => {
     // Coordinate system: X+ patient right, Y+ up, Z+ posterior, Z- anterior.
@@ -224,6 +225,7 @@ export function RightInnerEarModel() {
 
   return (
     <group ref={groupRef} scale={1.2}>
+      <group rotation={contentRotation}>
       <group position={[-0.78, -0.62, 0]}>
         <Line points={[[0, 0, 0], [0.34, 0, 0]]} color="#ef4444" lineWidth={3} />
         <Line points={[[0, 0, 0], [0, 0.34, 0]]} color="#22c55e" lineWidth={3} />
@@ -316,6 +318,7 @@ export function RightInnerEarModel() {
       <Text position={[0.48, 0.52, -0.72]} fontSize={0.075} color="#ef4444" anchorX="left">
         anterior canal
       </Text>
+      </group>
     </group>
   )
 }
