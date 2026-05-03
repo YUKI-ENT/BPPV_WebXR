@@ -2,6 +2,7 @@ import { Line, Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { getHeadPose } from '../utils/xrHeadPose'
 
 type TubeProps = {
   curve: THREE.Curve<THREE.Vector3>
@@ -114,9 +115,10 @@ function translatePointsToEnd(points: THREE.Vector3[], target: THREE.Vector3) {
 
 export function RightInnerEarModel() {
   const groupRef = useRef<THREE.Group>(null)
-  const modelLocalPosition = useMemo(() => new THREE.Vector3(0, 0, -7), [])
-  const modelWorldPosition = useMemo(() => new THREE.Vector3(), [])
-  const cameraWorldQuaternion = useMemo(() => new THREE.Quaternion(), [])
+  const headPosition = useMemo(() => new THREE.Vector3(), [])
+  const headQuaternion = useMemo(() => new THREE.Quaternion(), [])
+  const headForward = useMemo(() => new THREE.Vector3(), [])
+  const headUp = useMemo(() => new THREE.Vector3(), [])
 
   const model = useMemo(() => {
     // Coordinate system: X+ patient right, Y+ up, Z+ posterior, Z- anterior.
@@ -206,16 +208,19 @@ export function RightInnerEarModel() {
     }
   }, [])
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera, gl }) => {
     const group = groupRef.current
     if (!group) return
 
-    modelWorldPosition.copy(modelLocalPosition)
-    camera.localToWorld(modelWorldPosition)
-    camera.getWorldQuaternion(cameraWorldQuaternion)
+    getHeadPose(camera, gl, headPosition, headQuaternion)
+    headForward.set(0, 0, -1).applyQuaternion(headQuaternion)
+    headUp.set(0, 1, 0).applyQuaternion(headQuaternion)
 
-    group.position.copy(modelWorldPosition)
-    group.quaternion.copy(cameraWorldQuaternion)
+    group.position
+      .copy(headPosition)
+      .add(headForward.multiplyScalar(7))
+      .add(headUp.multiplyScalar(0.35))
+    group.quaternion.copy(headQuaternion)
   })
 
   return (
