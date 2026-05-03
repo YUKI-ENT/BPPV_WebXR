@@ -2,6 +2,7 @@ import { Line, Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { getHeadPose } from '../utils/xrHeadPose'
 
 type TubeProps = {
   curve: THREE.Curve<THREE.Vector3>
@@ -117,7 +118,10 @@ export function RightInnerEarModel() {
   const cameraPosition = useMemo(() => new THREE.Vector3(), [])
   const cameraQuaternion = useMemo(() => new THREE.Quaternion(), [])
   const cameraForward = useMemo(() => new THREE.Vector3(), [])
-  const cameraUp = useMemo(() => new THREE.Vector3(), [])
+  const posteriorViewRotation = useMemo(
+    () => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI),
+    []
+  )
 
   const model = useMemo(() => {
     // Coordinate system: X+ patient right, Y+ up, Z+ posterior, Z- anterior.
@@ -207,21 +211,15 @@ export function RightInnerEarModel() {
     }
   }, [])
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera, gl }) => {
     const group = groupRef.current
     if (!group) return
 
-    camera.getWorldPosition(cameraPosition)
-    camera.getWorldQuaternion(cameraQuaternion)
+    getHeadPose(camera, gl, cameraPosition, cameraQuaternion)
     cameraForward.set(0, 0, -1).applyQuaternion(cameraQuaternion)
-    cameraUp.set(0, 1, 0).applyQuaternion(cameraQuaternion)
 
-    group.position
-      .copy(cameraPosition)
-      .add(cameraForward.multiplyScalar(1.85))
-      .add(cameraUp.multiplyScalar(0.42))
-    // Keep local Z+ posterior facing the viewer, so the model is seen from behind.
-    group.quaternion.copy(cameraQuaternion)
+    group.position.copy(cameraPosition).add(cameraForward.multiplyScalar(7))
+    group.quaternion.copy(cameraQuaternion).multiply(posteriorViewRotation)
   })
 
   return (

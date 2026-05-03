@@ -4,6 +4,7 @@ import { XR, createXRStore } from '@react-three/xr'
 import { useRef, useState } from 'react'
 import * as THREE from 'three'
 import { RightInnerEarModel } from './components/RightInnerEarModel'
+import { getHeadPose } from './utils/xrHeadPose'
 import './App.css'
 
 const xrStore = createXRStore()
@@ -21,13 +22,14 @@ function HeadPoseDebug({
 }) {
   const lastUpdate = useRef(0)
   const euler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
+  const headPosition = useRef(new THREE.Vector3())
   const quaternion = useRef(new THREE.Quaternion())
 
-  useFrame(({ camera, clock }) => {
+  useFrame(({ camera, clock, gl }) => {
     const elapsed = clock.getElapsedTime()
     if (elapsed - lastUpdate.current < 0.12) return
 
-    camera.getWorldQuaternion(quaternion.current)
+    getHeadPose(camera, gl, headPosition.current, quaternion.current)
     euler.current.setFromQuaternion(quaternion.current, 'YXZ')
     onChange({
       x: euler.current.x,
@@ -47,19 +49,18 @@ function ViewLockedDebugText({ angles }: { angles: HeadAngles }) {
   const cameraForward = useRef(new THREE.Vector3())
   const cameraUp = useRef(new THREE.Vector3())
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera, gl }) => {
     const group = groupRef.current
     if (!group) return
 
-    camera.getWorldPosition(cameraPosition.current)
-    camera.getWorldQuaternion(cameraQuaternion.current)
+    getHeadPose(camera, gl, cameraPosition.current, cameraQuaternion.current)
     cameraForward.current.set(0, 0, -1).applyQuaternion(cameraQuaternion.current)
     cameraUp.current.set(0, 1, 0).applyQuaternion(cameraQuaternion.current)
 
     group.position
       .copy(cameraPosition.current)
-      .add(cameraForward.current.multiplyScalar(1.15))
-      .add(cameraUp.current.multiplyScalar(-0.42))
+      .add(cameraForward.current.multiplyScalar(2.2))
+      .add(cameraUp.current.multiplyScalar(-0.72))
     group.quaternion.copy(cameraQuaternion.current)
   })
 
