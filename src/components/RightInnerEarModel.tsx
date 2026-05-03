@@ -118,10 +118,6 @@ export function RightInnerEarModel() {
   const cameraPosition = useMemo(() => new THREE.Vector3(), [])
   const cameraQuaternion = useMemo(() => new THREE.Quaternion(), [])
   const cameraForward = useMemo(() => new THREE.Vector3(), [])
-  const posteriorViewRotation = useMemo(
-    () => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI),
-    []
-  )
 
   const model = useMemo(() => {
     // Coordinate system: X+ patient right, Y+ up, Z+ posterior, Z- anterior.
@@ -219,7 +215,7 @@ export function RightInnerEarModel() {
     cameraForward.set(0, 0, -1).applyQuaternion(cameraQuaternion)
 
     group.position.copy(cameraPosition).add(cameraForward.multiplyScalar(7))
-    group.quaternion.copy(cameraQuaternion).multiply(posteriorViewRotation)
+    group.quaternion.copy(cameraQuaternion)
   })
 
   return (
