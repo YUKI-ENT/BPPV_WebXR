@@ -9,7 +9,7 @@ import './App.css'
 
 const xrStore = createXRStore()
 
-type HeadAngles = {
+type HeadGravity = {
   x: number
   y: number
   z: number
@@ -18,23 +18,26 @@ type HeadAngles = {
 function HeadPoseDebug({
   onChange,
 }: {
-  onChange: (angles: HeadAngles) => void
+  onChange: (gravity: HeadGravity) => void
 }) {
   const lastUpdate = useRef(0)
-  const euler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
   const headPosition = useRef(new THREE.Vector3())
   const quaternion = useRef(new THREE.Quaternion())
+  const inverseQuaternion = useRef(new THREE.Quaternion())
+  const localGravity = useRef(new THREE.Vector3())
+  const worldGravity = useRef(new THREE.Vector3(0, -1, 0))
 
   useFrame(({ camera, clock, gl }) => {
     const elapsed = clock.getElapsedTime()
     if (elapsed - lastUpdate.current < 0.12) return
 
     getHeadPose(camera, gl, headPosition.current, quaternion.current)
-    euler.current.setFromQuaternion(quaternion.current, 'YXZ')
+    inverseQuaternion.current.copy(quaternion.current).invert()
+    localGravity.current.copy(worldGravity.current).applyQuaternion(inverseQuaternion.current)
     onChange({
-      x: euler.current.x,
-      y: euler.current.y,
-      z: euler.current.z,
+      x: localGravity.current.x,
+      y: localGravity.current.y,
+      z: localGravity.current.z,
     })
     lastUpdate.current = elapsed
   })
@@ -42,7 +45,7 @@ function HeadPoseDebug({
   return null
 }
 
-function ViewLockedDebugText({ angles }: { angles: HeadAngles }) {
+function ViewLockedDebugText({ gravity }: { gravity: HeadGravity }) {
   const groupRef = useRef<THREE.Group>(null)
   const cameraPosition = useRef(new THREE.Vector3())
   const cameraQuaternion = useRef(new THREE.Quaternion())
@@ -74,27 +77,25 @@ function ViewLockedDebugText({ angles }: { angles: HeadAngles }) {
         outlineColor="#111827"
         outlineWidth={0.006}
       >
-        {`X: ${THREE.MathUtils.radToDeg(angles.x).toFixed(2)} Y: ${(
-          -THREE.MathUtils.radToDeg(angles.y)
-        ).toFixed(2)} Z: ${(-THREE.MathUtils.radToDeg(angles.z)).toFixed(2)}`}
+        {`X: ${gravity.x.toFixed(2)} Y: ${gravity.y.toFixed(2)} Z: ${gravity.z.toFixed(2)}`}
       </Text>
     </group>
   )
 }
 
 function Scene({
-  headAngles,
-  onHeadAnglesChange,
+  headGravity,
+  onHeadGravityChange,
 }: {
-  headAngles: HeadAngles
-  onHeadAnglesChange: (angles: HeadAngles) => void
+  headGravity: HeadGravity
+  onHeadGravityChange: (gravity: HeadGravity) => void
 }) {
   return (
     <>
       <ambientLight intensity={0.8} />
       <directionalLight position={[5, 8, 5]} intensity={1.2} />
-      <HeadPoseDebug onChange={onHeadAnglesChange} />
-      <ViewLockedDebugText angles={headAngles} />
+      <HeadPoseDebug onChange={onHeadGravityChange} />
+      <ViewLockedDebugText gravity={headGravity} />
 
       <Grid
         args={[40, 40]}
@@ -129,7 +130,7 @@ function Scene({
 
 export default function App() {
   const [vrError, setVrError] = useState<string>('')
-  const [headAngles, setHeadAngles] = useState<HeadAngles>({ x: 0, y: 0, z: 0 })
+  const [headGravity, setHeadGravity] = useState<HeadGravity>({ x: 0, y: -1, z: 0 })
 
   const enterVR = async () => {
     try {
@@ -148,10 +149,10 @@ export default function App() {
         <button onClick={enterVR}>Start VR</button>
         <div>Right inner ear model, posterior canal otolith, grid, and XYZ axes.</div>
         <div className="debug-pose">
-          <div>Head angle debug</div>
-          <div>X: {THREE.MathUtils.radToDeg(headAngles.x).toFixed(1)} deg</div>
-          <div>Y: {(-THREE.MathUtils.radToDeg(headAngles.y)).toFixed(1)} deg</div>
-          <div>Z: {(-THREE.MathUtils.radToDeg(headAngles.z)).toFixed(1)} deg</div>
+          <div>Gravity vector debug</div>
+          <div>X: {headGravity.x.toFixed(2)}</div>
+          <div>Y: {headGravity.y.toFixed(2)}</div>
+          <div>Z: {headGravity.z.toFixed(2)}</div>
         </div>
         {vrError && <p className="error">{vrError}</p>}
       </div>
@@ -159,7 +160,7 @@ export default function App() {
       <Canvas camera={{ position: [0, 1.6, 4], fov: 65 }}>
         <color attach="background" args={['#111827']} />
         <XR store={xrStore}>
-          <Scene headAngles={headAngles} onHeadAnglesChange={setHeadAngles} />
+          <Scene headGravity={headGravity} onHeadGravityChange={setHeadGravity} />
         </XR>
       </Canvas>
     </div>

@@ -122,13 +122,12 @@ export function RightInnerEarModel() {
     () => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI),
     []
   )
-  const contentRotation = useMemo(() => [0, Math.PI, 0] as [number, number, number], [])
 
   const model = useMemo(() => {
     // Coordinate system: X+ patient right, Y+ up, Z+ posterior, Z- anterior.
     const utricle = new THREE.Vector3(0, 0, 0)
     const commonCrus = new THREE.Vector3(0.0, 0.46, 0.04)
-    const lateralUtricleEndTarget = new THREE.Vector3(0.34, 0.02, 0.13)
+    const lateralUtricleEndTarget = new THREE.Vector3(0.68, 0.02, 0.02)
     const posteriorUtricleEndTarget = new THREE.Vector3(-0.1, 0.24, 0.22)
     const anteriorUtricleEndTarget = new THREE.Vector3(0.1, 0.24, -0.22)
     const posteriorAmpullaPort = new THREE.Vector3(-0.27, -0.02, 0.16)
@@ -143,7 +142,7 @@ export function RightInnerEarModel() {
     ).normalize()
     const lateralPoints = translatePointsToEnd(
       makeEllipseArc(
-        new THREE.Vector3(0.1, 0.04, 0.08),
+        new THREE.Vector3(0.42, 0.04, -0.03),
         lateralAxisU,
         lateralAxisV,
         0.72,
@@ -225,18 +224,17 @@ export function RightInnerEarModel() {
 
   return (
     <group ref={groupRef} scale={1.2}>
-      <group rotation={contentRotation}>
       <group position={[-0.78, -0.62, 0]}>
-        <Line points={[[0, 0, 0], [0.34, 0, 0]]} color="#ef4444" lineWidth={3} />
+        <Line points={[[0, 0, 0], [-0.34, 0, 0]]} color="#ef4444" lineWidth={3} />
         <Line points={[[0, 0, 0], [0, 0.34, 0]]} color="#22c55e" lineWidth={3} />
-        <Line points={[[0, 0, 0], [0, 0, 0.34]]} color="#3b82f6" lineWidth={3} />
-        <Text position={[0.42, 0, 0]} fontSize={0.07} color="#ef4444" anchorX="center">
+        <Line points={[[0, 0, 0], [0, 0, -0.34]]} color="#3b82f6" lineWidth={3} />
+        <Text position={[-0.42, 0, 0]} fontSize={0.07} color="#ef4444" anchorX="center">
           X
         </Text>
         <Text position={[0, 0.42, 0]} fontSize={0.07} color="#22c55e" anchorX="center">
           Y
         </Text>
-        <Text position={[0, 0, 0.42]} fontSize={0.07} color="#3b82f6" anchorX="center">
+        <Text position={[0, 0, -0.42]} fontSize={0.07} color="#3b82f6" anchorX="center">
           Z
         </Text>
       </group>
@@ -309,7 +307,7 @@ export function RightInnerEarModel() {
         otolith
       </Text>
 
-      <Text position={[0.78, 0.03, 0.14]} fontSize={0.075} color="#22c55e" anchorX="left">
+      <Text position={[1.08, 0.03, 0.02]} fontSize={0.075} color="#22c55e" anchorX="left">
         lateral canal
       </Text>
       <Text position={[0.48, 0.52, 0.72]} fontSize={0.075} color="#3b82f6" anchorX="left">
@@ -318,7 +316,6 @@ export function RightInnerEarModel() {
       <Text position={[0.48, 0.52, -0.72]} fontSize={0.075} color="#ef4444" anchorX="left">
         anterior canal
       </Text>
-      </group>
     </group>
   )
 }
