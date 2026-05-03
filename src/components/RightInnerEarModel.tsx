@@ -118,6 +118,11 @@ export function RightInnerEarModel() {
   const cameraPosition = useMemo(() => new THREE.Vector3(), [])
   const cameraQuaternion = useMemo(() => new THREE.Quaternion(), [])
   const cameraForward = useMemo(() => new THREE.Vector3(), [])
+  const posteriorViewRotation = useMemo(
+    () => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI),
+    []
+  )
+  const readableTextRotation = useMemo(() => [0, Math.PI, 0] as [number, number, number], [])
 
   const model = useMemo(() => {
     // Coordinate system: X+ patient right, Y+ up, Z+ posterior, Z- anterior.
@@ -215,7 +220,7 @@ export function RightInnerEarModel() {
     cameraForward.set(0, 0, -1).applyQuaternion(cameraQuaternion)
 
     group.position.copy(cameraPosition).add(cameraForward.multiplyScalar(7))
-    group.quaternion.copy(cameraQuaternion)
+    group.quaternion.copy(cameraQuaternion).multiply(posteriorViewRotation)
   })
 
   return (
@@ -224,13 +229,31 @@ export function RightInnerEarModel() {
         <Line points={[[0, 0, 0], [0.34, 0, 0]]} color="#ef4444" lineWidth={3} />
         <Line points={[[0, 0, 0], [0, 0.34, 0]]} color="#22c55e" lineWidth={3} />
         <Line points={[[0, 0, 0], [0, 0, 0.34]]} color="#3b82f6" lineWidth={3} />
-        <Text position={[0.42, 0, 0]} fontSize={0.07} color="#ef4444" anchorX="center">
+        <Text
+          position={[0.42, 0, 0]}
+          rotation={readableTextRotation}
+          fontSize={0.07}
+          color="#ef4444"
+          anchorX="center"
+        >
           X
         </Text>
-        <Text position={[0, 0.42, 0]} fontSize={0.07} color="#22c55e" anchorX="center">
+        <Text
+          position={[0, 0.42, 0]}
+          rotation={readableTextRotation}
+          fontSize={0.07}
+          color="#22c55e"
+          anchorX="center"
+        >
           Y
         </Text>
-        <Text position={[0, 0, 0.42]} fontSize={0.07} color="#3b82f6" anchorX="center">
+        <Text
+          position={[0, 0, 0.42]}
+          rotation={readableTextRotation}
+          fontSize={0.07}
+          color="#3b82f6"
+          anchorX="center"
+        >
           Z
         </Text>
       </group>
@@ -239,13 +262,20 @@ export function RightInnerEarModel() {
         <sphereGeometry args={[0.2, 40, 40]} />
         <meshStandardMaterial color="#facc15" transparent opacity={0.74} depthWrite={false} />
       </mesh>
-      <Text position={[0, -0.36, 0]} fontSize={0.09} color="#facc15" anchorX="center">
+      <Text
+        position={[0, -0.36, 0]}
+        rotation={readableTextRotation}
+        fontSize={0.09}
+        color="#facc15"
+        anchorX="center"
+      >
         Utricle
       </Text>
 
       <MarkerSphere position={model.commonCrus} color="#fb923c" radius={0.085} />
       <Text
         position={model.commonCrus.clone().add(new THREE.Vector3(0.08, 0.16, 0))}
+        rotation={readableTextRotation}
         fontSize={0.075}
         color="#fb923c"
         anchorX="left"
@@ -273,6 +303,7 @@ export function RightInnerEarModel() {
 
       <Text
         position={model.posteriorAmpulla.clone().add(new THREE.Vector3(0.08, -0.15, 0))}
+        rotation={readableTextRotation}
         fontSize={0.065}
         color="#93c5fd"
         anchorX="left"
@@ -296,6 +327,7 @@ export function RightInnerEarModel() {
       </group>
       <Text
         position={model.otolith.clone().add(new THREE.Vector3(0.12, 0.12, 0))}
+        rotation={readableTextRotation}
         fontSize={0.075}
         color="white"
         anchorX="left"
@@ -303,13 +335,31 @@ export function RightInnerEarModel() {
         otolith
       </Text>
 
-      <Text position={[0.78, 0.03, 0.14]} fontSize={0.075} color="#22c55e" anchorX="left">
+      <Text
+        position={[0.78, 0.03, 0.14]}
+        rotation={readableTextRotation}
+        fontSize={0.075}
+        color="#22c55e"
+        anchorX="left"
+      >
         lateral canal
       </Text>
-      <Text position={[0.48, 0.52, 0.72]} fontSize={0.075} color="#3b82f6" anchorX="left">
+      <Text
+        position={[0.48, 0.52, 0.72]}
+        rotation={readableTextRotation}
+        fontSize={0.075}
+        color="#3b82f6"
+        anchorX="left"
+      >
         posterior canal
       </Text>
-      <Text position={[0.48, 0.52, -0.72]} fontSize={0.075} color="#ef4444" anchorX="left">
+      <Text
+        position={[0.48, 0.52, -0.72]}
+        rotation={readableTextRotation}
+        fontSize={0.075}
+        color="#ef4444"
+        anchorX="left"
+      >
         anterior canal
       </Text>
     </group>
