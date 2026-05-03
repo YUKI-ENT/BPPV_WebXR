@@ -45,31 +45,28 @@ function HeadPoseDebug({
   return null
 }
 
-function ViewLockedDebugText({ gravity }: { gravity: HeadGravity }) {
+function ViewLockedOverlay({ gravity }: { gravity: HeadGravity }) {
   const groupRef = useRef<THREE.Group>(null)
   const cameraPosition = useRef(new THREE.Vector3())
   const cameraQuaternion = useRef(new THREE.Quaternion())
-  const cameraForward = useRef(new THREE.Vector3())
-  const cameraUp = useRef(new THREE.Vector3())
 
   useFrame(({ camera, gl }) => {
     const group = groupRef.current
     if (!group) return
 
     getHeadPose(camera, gl, cameraPosition.current, cameraQuaternion.current)
-    cameraForward.current.set(0, 0, -1).applyQuaternion(cameraQuaternion.current)
-    cameraUp.current.set(0, 1, 0).applyQuaternion(cameraQuaternion.current)
 
-    group.position
-      .copy(cameraPosition.current)
-      .add(cameraForward.current.multiplyScalar(2.2))
-      .add(cameraUp.current.multiplyScalar(-0.72))
+    group.position.copy(cameraPosition.current)
     group.quaternion.copy(cameraQuaternion.current)
   })
 
   return (
     <group ref={groupRef}>
+      <group position={[0, 0.35, -7]}>
+        <RightInnerEarModel />
+      </group>
       <Text
+        position={[0, -0.72, -2.2]}
         fontSize={0.075}
         color="white"
         anchorX="center"
@@ -95,7 +92,7 @@ function Scene({
       <ambientLight intensity={0.8} />
       <directionalLight position={[5, 8, 5]} intensity={1.2} />
       <HeadPoseDebug onChange={onHeadGravityChange} />
-      <ViewLockedDebugText gravity={headGravity} />
+      <ViewLockedOverlay gravity={headGravity} />
 
       <Grid
         args={[40, 40]}
@@ -120,8 +117,6 @@ function Scene({
       <Text position={[0, 0.2, 5.4]} fontSize={0.35} color="blue">
         Z
       </Text>
-
-      <RightInnerEarModel />
 
       <OrbitControls makeDefault />
     </>

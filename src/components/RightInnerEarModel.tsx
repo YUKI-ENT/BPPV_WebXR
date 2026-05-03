@@ -1,8 +1,6 @@
 import { Line, Text } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import * as THREE from 'three'
-import { getHeadPose } from '../utils/xrHeadPose'
 
 type TubeProps = {
   curve: THREE.Curve<THREE.Vector3>
@@ -114,11 +112,6 @@ function translatePointsToEnd(points: THREE.Vector3[], target: THREE.Vector3) {
 }
 
 export function RightInnerEarModel() {
-  const groupRef = useRef<THREE.Group>(null)
-  const cameraPosition = useMemo(() => new THREE.Vector3(), [])
-  const cameraQuaternion = useMemo(() => new THREE.Quaternion(), [])
-  const cameraForward = useMemo(() => new THREE.Vector3(), [])
-
   const model = useMemo(() => {
     // Coordinate system: X+ patient right, Y+ up, Z+ posterior, Z- anterior.
     const utricle = new THREE.Vector3(0, 0, 0)
@@ -207,19 +200,8 @@ export function RightInnerEarModel() {
     }
   }, [])
 
-  useFrame(({ camera, gl }) => {
-    const group = groupRef.current
-    if (!group) return
-
-    getHeadPose(camera, gl, cameraPosition, cameraQuaternion)
-    cameraForward.set(0, 0, -1).applyQuaternion(cameraQuaternion)
-
-    group.position.copy(cameraPosition).add(cameraForward.multiplyScalar(7))
-    group.quaternion.copy(cameraQuaternion)
-  })
-
   return (
-    <group ref={groupRef} scale={1.2}>
+    <group scale={1.2}>
       <group position={[-0.78, -0.62, 0]}>
         <Line points={[[0, 0, 0], [0.34, 0, 0]]} color="#ef4444" lineWidth={3} />
         <Line points={[[0, 0, 0], [0, 0.34, 0]]} color="#22c55e" lineWidth={3} />
