@@ -74,7 +74,9 @@ function ViewLockedDebugText({ angles }: { angles: HeadAngles }) {
         outlineColor="#111827"
         outlineWidth={0.006}
       >
-        {`X: ${angles.x.toFixed(2)} Y: ${angles.y.toFixed(2)} Z: ${angles.z.toFixed(2)}`}
+        {`X: ${THREE.MathUtils.radToDeg(angles.x).toFixed(2)} Y: ${(
+          -THREE.MathUtils.radToDeg(angles.y)
+        ).toFixed(2)} Z: ${(-THREE.MathUtils.radToDeg(angles.z)).toFixed(2)}`}
       </Text>
     </group>
   )
@@ -148,8 +150,8 @@ export default function App() {
         <div className="debug-pose">
           <div>Head angle debug</div>
           <div>X: {THREE.MathUtils.radToDeg(headAngles.x).toFixed(1)} deg</div>
-          <div>Y: {THREE.MathUtils.radToDeg(headAngles.y).toFixed(1)} deg</div>
-          <div>Z: {THREE.MathUtils.radToDeg(headAngles.z).toFixed(1)} deg</div>
+          <div>Y: {(-THREE.MathUtils.radToDeg(headAngles.y)).toFixed(1)} deg</div>
+          <div>Z: {(-THREE.MathUtils.radToDeg(headAngles.z)).toFixed(1)} deg</div>
         </div>
         {vrError && <p className="error">{vrError}</p>}
       </div>
