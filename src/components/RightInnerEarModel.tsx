@@ -118,6 +118,7 @@ export function RightInnerEarModel() {
   const cameraPosition = useMemo(() => new THREE.Vector3(), [])
   const cameraQuaternion = useMemo(() => new THREE.Quaternion(), [])
   const cameraForward = useMemo(() => new THREE.Vector3(), [])
+  const horizontalForward = useMemo(() => new THREE.Vector3(), [])
   const posteriorViewRotation = useMemo(
     () => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI),
     []
@@ -217,8 +218,17 @@ export function RightInnerEarModel() {
 
     getHeadPose(camera, gl, cameraPosition, cameraQuaternion)
     cameraForward.set(0, 0, -1).applyQuaternion(cameraQuaternion)
+    horizontalForward.set(cameraForward.x, 0, cameraForward.z)
+    if (horizontalForward.lengthSq() < 0.0001) {
+      horizontalForward.set(0, 0, -1)
+    } else {
+      horizontalForward.normalize()
+    }
 
-    group.position.copy(cameraPosition).add(cameraForward.multiplyScalar(7))
+    group.position
+      .copy(cameraPosition)
+      .setY(Math.max(cameraPosition.y, 1.6))
+      .add(horizontalForward.multiplyScalar(7))
     group.quaternion.copy(cameraQuaternion).multiply(posteriorViewRotation)
   })
 
