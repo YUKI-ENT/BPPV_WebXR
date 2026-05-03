@@ -1,3 +1,4 @@
+import { RightInnerEarModel } from './components/RightInnerEarModel'
 import { Canvas } from '@react-three/fiber'
 import { Grid, Line, OrbitControls, Text, Torus } from '@react-three/drei'
 import { XR, createXRStore } from '@react-three/xr'
@@ -8,82 +9,7 @@ import './App.css'
 
 const xrStore = createXRStore()
 
-function RotationDisplay3D() {
-  const textRef = useRef<any>(null)
-
-  useFrame(({ camera }) => {
-    if (!textRef.current) return
-
-    const rot = camera.rotation
-    const x = THREE.MathUtils.radToDeg(rot.x).toFixed(1)
-    const y = THREE.MathUtils.radToDeg(rot.y).toFixed(1)
-    const z = THREE.MathUtils.radToDeg(rot.z).toFixed(1)
-
-    textRef.current.text = `Head rotation\nX: ${x}  Y: ${y}  Z: ${z}`
-  })
-
-  return (
-    <Text
-      ref={textRef}
-      position={[0, 1.6, -2.2]}
-      fontSize={0.12}
-      color="white"
-      anchorX="center"
-      anchorY="middle"
-    >
-      Head rotation
-    </Text>
-  )
-}
-
-function InnerEarPrototype() {
-  return (
-    <group position={[0, 1.4, -3]}>
-      <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[0.08, 24, 24]} />
-        <meshStandardMaterial color="yellow" />
-      </mesh>
-
-      {/* 前半規管っぽい輪 */}
-      <Torus
-        args={[0.55, 0.035, 16, 96]}
-        position={[0, 0.35, -0.2]}
-        rotation={[0, THREE.MathUtils.degToRad(60), 0]}
-      >
-        <meshStandardMaterial color="red" transparent opacity={0.45} />
-      </Torus>
-
-      {/* 外側半規管っぽい輪 */}
-      <Torus
-        args={[0.55, 0.035, 16, 96]}
-        position={[0.45, 0, 0]}
-        rotation={[THREE.MathUtils.degToRad(120), 0, 0]}
-      >
-        <meshStandardMaterial color="green" transparent opacity={0.45} />
-      </Torus>
-
-      {/* 後半規管っぽい輪 */}
-      <Torus
-        args={[0.55, 0.035, 16, 96]}
-        position={[0, 0.2, 0.45]}
-        rotation={[0, THREE.MathUtils.degToRad(-40), 0]}
-      >
-        <meshStandardMaterial color="blue" transparent opacity={0.45} />
-      </Torus>
-    </group>
-  )
-}
-
 function Scene() {
-  const horizonPoints = useMemo(
-    () =>
-      [
-        [-20, 0, -20],
-        [20, 0, -20],
-      ] as [number, number, number][],
-    []
-  )
-
   return (
     <>
       <ambientLight intensity={0.8} />
@@ -96,7 +22,7 @@ function Scene() {
         position={[0, 0, 0]}
       />
 
-      <Line points={horizonPoints} color="white" lineWidth={2} />
+      <Line points={[[-20, 0, -20], [20, 0, -20]]} color="white" lineWidth={2} />
 
       <Line points={[[0, 0.02, 0], [5, 0.02, 0]]} color="red" lineWidth={3} />
       <Text position={[5.4, 0.2, 0]} fontSize={0.35} color="red">X</Text>
@@ -107,8 +33,7 @@ function Scene() {
       <Line points={[[0, 0.02, 0], [0, 0.02, 5]]} color="blue" lineWidth={3} />
       <Text position={[0, 0.2, 5.4]} fontSize={0.35} color="blue">Z</Text>
 
-      <InnerEarPrototype />
-      <RotationDisplay3D />
+      <RightInnerEarModel />
 
       <OrbitControls makeDefault />
     </>
