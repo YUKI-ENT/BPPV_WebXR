@@ -118,12 +118,6 @@ export function RightInnerEarModel() {
   const cameraPosition = useMemo(() => new THREE.Vector3(), [])
   const cameraQuaternion = useMemo(() => new THREE.Quaternion(), [])
   const cameraForward = useMemo(() => new THREE.Vector3(), [])
-  const posteriorViewRotation = useMemo(
-    () => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI),
-    []
-  )
-  const contentRotation = useMemo(() => [0, Math.PI, 0] as [number, number, number], [])
-  const labelRotation = useMemo(() => [0, Math.PI, 0] as [number, number, number], [])
 
   const model = useMemo(() => {
     // Coordinate system: X+ patient right, Y+ up, Z+ posterior, Z- anterior.
@@ -221,19 +215,17 @@ export function RightInnerEarModel() {
     cameraForward.set(0, 0, -1).applyQuaternion(cameraQuaternion)
 
     group.position.copy(cameraPosition).add(cameraForward.multiplyScalar(7))
-    group.quaternion.copy(cameraQuaternion).multiply(posteriorViewRotation)
+    group.quaternion.copy(cameraQuaternion)
   })
 
   return (
     <group ref={groupRef} scale={1.2}>
-      <group rotation={contentRotation}>
       <group position={[-0.78, -0.62, 0]}>
         <Line points={[[0, 0, 0], [0.34, 0, 0]]} color="#ef4444" lineWidth={3} />
         <Line points={[[0, 0, 0], [0, 0.34, 0]]} color="#22c55e" lineWidth={3} />
         <Line points={[[0, 0, 0], [0, 0, 0.34]]} color="#3b82f6" lineWidth={3} />
         <Text
           position={[0.42, 0, 0]}
-          rotation={labelRotation}
           fontSize={0.07}
           color="#ef4444"
           anchorX="center"
@@ -242,7 +234,6 @@ export function RightInnerEarModel() {
         </Text>
         <Text
           position={[0, 0.42, 0]}
-          rotation={labelRotation}
           fontSize={0.07}
           color="#22c55e"
           anchorX="center"
@@ -251,7 +242,6 @@ export function RightInnerEarModel() {
         </Text>
         <Text
           position={[0, 0, 0.42]}
-          rotation={labelRotation}
           fontSize={0.07}
           color="#3b82f6"
           anchorX="center"
@@ -266,7 +256,6 @@ export function RightInnerEarModel() {
       </mesh>
       <Text
         position={[0, -0.36, 0]}
-        rotation={labelRotation}
         fontSize={0.09}
         color="#facc15"
         anchorX="center"
@@ -277,7 +266,6 @@ export function RightInnerEarModel() {
       <MarkerSphere position={model.commonCrus} color="#fb923c" radius={0.085} />
       <Text
         position={model.commonCrus.clone().add(new THREE.Vector3(0.08, 0.16, 0))}
-        rotation={labelRotation}
         fontSize={0.075}
         color="#fb923c"
         anchorX="left"
@@ -305,7 +293,6 @@ export function RightInnerEarModel() {
 
       <Text
         position={model.posteriorAmpulla.clone().add(new THREE.Vector3(0.08, -0.15, 0))}
-        rotation={labelRotation}
         fontSize={0.065}
         color="#93c5fd"
         anchorX="left"
@@ -329,7 +316,6 @@ export function RightInnerEarModel() {
       </group>
       <Text
         position={model.otolith.clone().add(new THREE.Vector3(0.12, 0.12, 0))}
-        rotation={labelRotation}
         fontSize={0.075}
         color="white"
         anchorX="left"
@@ -339,7 +325,6 @@ export function RightInnerEarModel() {
 
       <Text
         position={[1.08, 0.03, 0.02]}
-        rotation={labelRotation}
         fontSize={0.075}
         color="#22c55e"
         anchorX="left"
@@ -348,7 +333,6 @@ export function RightInnerEarModel() {
       </Text>
       <Text
         position={[0.48, 0.52, 0.72]}
-        rotation={labelRotation}
         fontSize={0.075}
         color="#3b82f6"
         anchorX="left"
@@ -357,14 +341,12 @@ export function RightInnerEarModel() {
       </Text>
       <Text
         position={[0.48, 0.52, -0.72]}
-        rotation={labelRotation}
         fontSize={0.075}
         color="#ef4444"
         anchorX="left"
       >
         anterior canal
       </Text>
-      </group>
     </group>
   )
 }
