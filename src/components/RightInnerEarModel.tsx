@@ -1,5 +1,6 @@
 import { Text } from '@react-three/drei'
-import { useMemo } from 'react'
+import { useFrame } from '@react-three/fiber'
+import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
 type TubeProps = {
@@ -9,9 +10,9 @@ type TubeProps = {
   opacity?: number
 }
 
-function Tube({ curve, color, radius = 0.035, opacity = 0.55 }: TubeProps) {
+function Tube({ curve, color, radius = 0.06, opacity = 0.42 }: TubeProps) {
   const geometry = useMemo(() => {
-    return new THREE.TubeGeometry(curve, 96, radius, 16, false)
+    return new THREE.TubeGeometry(curve, 128, radius, 20, false)
   }, [curve, radius])
 
   return (
@@ -20,8 +21,10 @@ function Tube({ curve, color, radius = 0.035, opacity = 0.55 }: TubeProps) {
         color={color}
         transparent
         opacity={opacity}
-        roughness={0.45}
-        metalness={0.05}
+        roughness={0.38}
+        metalness={0.03}
+        depthWrite={false}
+        side={THREE.DoubleSide}
       />
     </mesh>
   )
@@ -31,8 +34,8 @@ function ConnectorTube({
   from,
   to,
   color,
-  radius = 0.025,
-  opacity = 0.35,
+  radius = 0.035,
+  opacity = 0.3,
 }: {
   from: THREE.Vector3
   to: THREE.Vector3
@@ -60,12 +63,12 @@ function MarkerSphere({
 }) {
   return (
     <mesh position={position}>
-      <sphereGeometry args={[radius, 24, 24]} />
+      <sphereGeometry args={[radius, 28, 28]} />
       <meshStandardMaterial
         color={color}
         transparent={opacity < 1}
         opacity={opacity}
-        roughness={0.4}
+        roughness={0.34}
       />
     </mesh>
   )
@@ -82,20 +85,19 @@ function makeEllipseArc(
   segments: number
 ) {
   const points: THREE.Vector3[] = []
-
   const start = THREE.MathUtils.degToRad(startDeg)
   const end = THREE.MathUtils.degToRad(endDeg)
 
-  for (let i = 0; i <= segments; i++) {
+  for (let i = 0; i <= segments; i += 1) {
     const t = i / segments
-    const a = start + (end - start) * t
+    const angle = start + (end - start) * t
 
-    const p = center
-      .clone()
-      .add(axisU.clone().multiplyScalar(Math.cos(a) * radiusU))
-      .add(axisV.clone().multiplyScalar(Math.sin(a) * radiusV))
-
-    points.push(p)
+    points.push(
+      center
+        .clone()
+        .add(axisU.clone().multiplyScalar(Math.cos(angle) * radiusU))
+        .add(axisV.clone().multiplyScalar(Math.sin(angle) * radiusV))
+    )
   }
 
   return points
@@ -105,86 +107,82 @@ function makeCurve(points: THREE.Vector3[]) {
   return new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.35)
 }
 
+function translatePointsToEnd(points: THREE.Vector3[], target: THREE.Vector3) {
+  const delta = target.clone().sub(points[points.length - 1])
+  return points.map((point) => point.clone().add(delta))
+}
+
 export function RightInnerEarModel() {
+  const groupRef = useRef<THREE.Group>(null)
+  const cameraPosition = useMemo(() => new THREE.Vector3(), [])
+  const cameraQuaternion = useMemo(() => new THREE.Quaternion(), [])
+  const cameraForward = useMemo(() => new THREE.Vector3(), [])
+  const cameraUp = useMemo(() => new THREE.Vector3(), [])
+
   const model = useMemo(() => {
-    // 座標系:
-    // X+ = 患者右
-    // Y+ = 上方
-    // Z+ = 後方
-    // Z- = 前方
-    //
-    // 右内耳を原点付近に置く説明用モデル。
-    // 厳密なCTメッシュではなく、半規管平面・接続関係を重視した模式モデル。
-
+    // Coordinate system: X+ patient right, Y+ up, Z+ posterior, Z- anterior.
     const utricle = new THREE.Vector3(0, 0, 0)
-    const commonCrus = new THREE.Vector3(0.05, 0.75, 0.05)
+    const commonCrus = new THREE.Vector3(0.02, 0.72, 0.03)
+    const lateralUtricleEndTarget = new THREE.Vector3(0.27, 0.01, 0.12)
+    const posteriorAmpullaPort = new THREE.Vector3(-0.18, 0.0, 0.14)
+    const anteriorAmpullaPort = new THREE.Vector3(0.18, 0.0, -0.14)
 
-    // 外側半規管:
-    // おおむね水平面だが、前方側が上がるように約25度傾ける。
-    const lateralTilt = THREE.MathUtils.degToRad(25)
+    const lateralTilt = THREE.MathUtils.degToRad(28)
     const lateralAxisU = new THREE.Vector3(1, 0, 0).normalize()
     const lateralAxisV = new THREE.Vector3(
       0,
       -Math.sin(lateralTilt),
       Math.cos(lateralTilt)
     ).normalize()
-
-    const lateralPoints = makeEllipseArc(
-      new THREE.Vector3(0, 0.02, 0),
-      lateralAxisU,
-      lateralAxisV,
-      0.72,
-      0.62,
-      210,
-      -60,
-      56
+    const lateralPoints = translatePointsToEnd(
+      makeEllipseArc(
+        new THREE.Vector3(0.1, 0.04, 0.08),
+        lateralAxisU,
+        lateralAxisV,
+        0.72,
+        0.58,
+        210,
+        -55,
+        72
+      ),
+      lateralUtricleEndTarget
     )
-    const lateralCurve = makeCurve(lateralPoints)
 
-    // 後半規管:
-    // 右後半規管は、上方-後外側方向の垂直系平面として近似。
-    const posteriorAxisU = new THREE.Vector3(0.45, 0, 0.9).normalize()
+    const posteriorAxisU = new THREE.Vector3(0.44, 0, 0.9).normalize()
     const posteriorAxisV = new THREE.Vector3(0, 1, 0).normalize()
-
-    const posteriorPoints = makeEllipseArc(
-      new THREE.Vector3(0.03, 0.18, 0.08),
-      posteriorAxisU,
-      posteriorAxisV,
-      0.62,
-      0.78,
-      -120,
-      215,
-      72
+    const posteriorPoints = translatePointsToEnd(
+      makeEllipseArc(
+        new THREE.Vector3(-0.04, 0.15, 0.08),
+        posteriorAxisU,
+        posteriorAxisV,
+        0.64,
+        0.82,
+        -125,
+        215,
+        88
+      ),
+      commonCrus
     )
-    const posteriorCurve = makeCurve(posteriorPoints)
 
-    // 前半規管:
-    // 後半規管とほぼ直交する垂直系平面として近似。
-    const anteriorAxisU = new THREE.Vector3(0.45, 0, -0.9).normalize()
+    const anteriorAxisU = new THREE.Vector3(0.44, 0, -0.9).normalize()
     const anteriorAxisV = new THREE.Vector3(0, 1, 0).normalize()
-
-    const anteriorPoints = makeEllipseArc(
-      new THREE.Vector3(0.03, 0.18, -0.08),
-      anteriorAxisU,
-      anteriorAxisV,
-      0.62,
-      0.78,
-      -120,
-      215,
-      72
+    const anteriorPoints = translatePointsToEnd(
+      makeEllipseArc(
+        new THREE.Vector3(0.04, 0.15, -0.08),
+        anteriorAxisU,
+        anteriorAxisV,
+        0.64,
+        0.82,
+        -125,
+        215,
+        88
+      ),
+      commonCrus.clone().add(new THREE.Vector3(0.05, 0.02, -0.04))
     )
+
+    const lateralCurve = makeCurve(lateralPoints)
+    const posteriorCurve = makeCurve(posteriorPoints)
     const anteriorCurve = makeCurve(anteriorPoints)
-
-    const posteriorAmpulla = posteriorCurve.getPoint(0)
-    const posteriorCommon = posteriorCurve.getPoint(1)
-
-    const anteriorAmpulla = anteriorCurve.getPoint(0)
-    const anteriorCommon = anteriorCurve.getPoint(1)
-
-    const lateralAmpulla = lateralCurve.getPoint(0)
-    const lateralUtricleEnd = lateralCurve.getPoint(1)
-
-    // 後半規管内の耳石。後で t を動かせば管内移動になる。
     const posteriorOtolithT = 0.58
     const otolith = posteriorCurve.getPoint(posteriorOtolithT)
 
@@ -194,130 +192,112 @@ export function RightInnerEarModel() {
       lateralCurve,
       posteriorCurve,
       anteriorCurve,
-      posteriorAmpulla,
-      posteriorCommon,
-      anteriorAmpulla,
-      anteriorCommon,
-      lateralAmpulla,
-      lateralUtricleEnd,
+      lateralAmpulla: lateralCurve.getPoint(0),
+      lateralUtricleEnd: lateralCurve.getPoint(1),
+      lateralUtricleEndTarget,
+      posteriorAmpulla: posteriorCurve.getPoint(0),
+      posteriorCommon: posteriorCurve.getPoint(1),
+      posteriorAmpullaPort,
+      anteriorAmpulla: anteriorCurve.getPoint(0),
+      anteriorCommon: anteriorCurve.getPoint(1),
+      anteriorAmpullaPort,
       otolith,
     }
   }, [])
 
-  return (
-    <group position={[0, 1.45, -3]} scale={1.2}>
-      {/* 卵形嚢 */}
-      <mesh position={model.utricle} scale={[1.35, 0.75, 0.9]}>
-        <sphereGeometry args={[0.14, 32, 32]} />
-        <meshStandardMaterial color="#facc15" transparent opacity={0.85} />
-      </mesh>
+  useFrame(({ camera }) => {
+    const group = groupRef.current
+    if (!group) return
 
-      <Text
-        position={[0, -0.28, 0]}
-        fontSize={0.09}
-        color="#facc15"
-        anchorX="center"
-        anchorY="middle"
-      >
+    camera.getWorldPosition(cameraPosition)
+    camera.getWorldQuaternion(cameraQuaternion)
+    cameraForward.set(0, 0, -1).applyQuaternion(cameraQuaternion)
+    cameraUp.set(0, 1, 0).applyQuaternion(cameraQuaternion)
+
+    group.position
+      .copy(cameraPosition)
+      .add(cameraForward.multiplyScalar(2.6))
+      .add(cameraUp.multiplyScalar(-0.08))
+    group.quaternion.copy(cameraQuaternion)
+  })
+
+  return (
+    <group ref={groupRef} scale={1.2}>
+      <mesh position={model.utricle} scale={[1.45, 0.75, 1.0]}>
+        <sphereGeometry args={[0.16, 36, 36]} />
+        <meshStandardMaterial color="#facc15" transparent opacity={0.8} />
+      </mesh>
+      <Text position={[0, -0.3, 0]} fontSize={0.09} color="#facc15" anchorX="center">
         Utricle
       </Text>
 
-      {/* common crus */}
-      <MarkerSphere position={model.commonCrus} color="#fb923c" radius={0.075} />
+      <MarkerSphere position={model.commonCrus} color="#fb923c" radius={0.085} />
       <Text
-        position={[0.1, 0.92, 0.05]}
+        position={model.commonCrus.clone().add(new THREE.Vector3(0.08, 0.16, 0))}
         fontSize={0.075}
         color="#fb923c"
         anchorX="left"
-        anchorY="middle"
       >
         common crus
       </Text>
 
-      {/* 半規管本体 */}
-      <Tube curve={model.lateralCurve} color="#22c55e" radius={0.032} opacity={0.55} />
-      <Tube curve={model.posteriorCurve} color="#3b82f6" radius={0.036} opacity={0.62} />
-      <Tube curve={model.anteriorCurve} color="#ef4444" radius={0.032} opacity={0.48} />
+      <Tube curve={model.lateralCurve} color="#22c55e" radius={0.062} opacity={0.43} />
+      <Tube curve={model.posteriorCurve} color="#3b82f6" radius={0.068} opacity={0.45} />
+      <Tube curve={model.anteriorCurve} color="#ef4444" radius={0.062} opacity={0.4} />
 
-      {/* 卵形嚢との接続を模式的に表示 */}
-      <ConnectorTube from={model.lateralAmpulla} to={model.utricle} color="#22c55e" />
       <ConnectorTube from={model.lateralUtricleEnd} to={model.utricle} color="#22c55e" />
-
-      <ConnectorTube from={model.posteriorAmpulla} to={model.utricle} color="#3b82f6" />
+      <ConnectorTube from={model.lateralAmpulla} to={model.utricle} color="#22c55e" opacity={0.2} />
+      <ConnectorTube from={model.posteriorAmpulla} to={model.posteriorAmpullaPort} color="#3b82f6" />
+      <ConnectorTube from={model.posteriorAmpullaPort} to={model.utricle} color="#3b82f6" opacity={0.24} />
       <ConnectorTube from={model.posteriorCommon} to={model.commonCrus} color="#3b82f6" />
-
-      <ConnectorTube from={model.anteriorAmpulla} to={model.utricle} color="#ef4444" />
+      <ConnectorTube from={model.commonCrus} to={model.utricle} color="#fb923c" opacity={0.24} />
+      <ConnectorTube from={model.anteriorAmpulla} to={model.anteriorAmpullaPort} color="#ef4444" />
+      <ConnectorTube from={model.anteriorAmpullaPort} to={model.utricle} color="#ef4444" opacity={0.24} />
       <ConnectorTube from={model.anteriorCommon} to={model.commonCrus} color="#ef4444" />
 
-      {/* 膨大部 */}
-      <MarkerSphere position={model.lateralAmpulla} color="#86efac" radius={0.095} />
-      <MarkerSphere position={model.posteriorAmpulla} color="#93c5fd" radius={0.105} />
-      <MarkerSphere position={model.anteriorAmpulla} color="#fca5a5" radius={0.095} />
+      <MarkerSphere position={model.lateralAmpulla} color="#86efac" radius={0.105} />
+      <MarkerSphere position={model.posteriorAmpulla} color="#93c5fd" radius={0.11} />
+      <MarkerSphere position={model.anteriorAmpulla} color="#fca5a5" radius={0.105} />
 
       <Text
-        position={model.posteriorAmpulla.clone().add(new THREE.Vector3(0.08, -0.14, 0))}
+        position={model.posteriorAmpulla.clone().add(new THREE.Vector3(0.08, -0.15, 0))}
         fontSize={0.065}
         color="#93c5fd"
         anchorX="left"
-        anchorY="middle"
       >
         posterior ampulla
       </Text>
 
-      {/* 後半規管内の耳石 */}
       <group position={model.otolith}>
-        <mesh>
-          <sphereGeometry args={[0.065, 24, 24]} />
-          <meshStandardMaterial color="#f8fafc" roughness={0.25} metalness={0.15} />
-        </mesh>
-        <mesh position={[0.08, 0.02, 0.02]}>
-          <sphereGeometry args={[0.035, 16, 16]} />
-          <meshStandardMaterial color="#e5e7eb" roughness={0.3} />
-        </mesh>
-        <mesh position={[-0.06, -0.02, 0.04]}>
-          <sphereGeometry args={[0.03, 16, 16]} />
-          <meshStandardMaterial color="#cbd5e1" roughness={0.3} />
-        </mesh>
+        {[
+          [0, 0, 0, 0.048, '#f8fafc'],
+          [0.07, 0.025, 0.02, 0.035, '#e5e7eb'],
+          [-0.055, -0.025, 0.035, 0.032, '#cbd5e1'],
+          [0.015, -0.05, -0.035, 0.028, '#f1f5f9'],
+          [-0.02, 0.05, -0.02, 0.026, '#d1d5db'],
+        ].map(([x, y, z, radius, color], index) => (
+          <mesh key={index} position={[x, y, z] as [number, number, number]}>
+            <sphereGeometry args={[radius as number, 20, 20]} />
+            <meshStandardMaterial color={color as string} roughness={0.28} metalness={0.08} />
+          </mesh>
+        ))}
       </group>
-
       <Text
         position={model.otolith.clone().add(new THREE.Vector3(0.12, 0.12, 0))}
         fontSize={0.075}
         color="white"
         anchorX="left"
-        anchorY="middle"
       >
         otolith
       </Text>
 
-      {/* ラベル */}
-      <Text
-        position={[0.85, 0.05, 0.15]}
-        fontSize={0.075}
-        color="#22c55e"
-        anchorX="left"
-        anchorY="middle"
-      >
+      <Text position={[0.78, 0.03, 0.14]} fontSize={0.075} color="#22c55e" anchorX="left">
         lateral canal
       </Text>
-
-      <Text
-        position={[0.55, 0.55, 0.75]}
-        fontSize={0.075}
-        color="#3b82f6"
-        anchorX="left"
-        anchorY="middle"
-      >
+      <Text position={[0.48, 0.52, 0.72]} fontSize={0.075} color="#3b82f6" anchorX="left">
         posterior canal
       </Text>
-
-      <Text
-        position={[0.55, 0.55, -0.75]}
-        fontSize={0.075}
-        color="#ef4444"
-        anchorX="left"
-        anchorY="middle"
-      >
+      <Text position={[0.48, 0.52, -0.72]} fontSize={0.075} color="#ef4444" anchorX="left">
         anterior canal
       </Text>
     </group>
