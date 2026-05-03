@@ -1,10 +1,8 @@
 import { RightInnerEarModel } from './components/RightInnerEarModel'
 import { Canvas } from '@react-three/fiber'
-import { Grid, Line, OrbitControls, Text, Torus } from '@react-three/drei'
+import { Grid, Line, OrbitControls, Text } from '@react-three/drei'
 import { XR, createXRStore } from '@react-three/xr'
-import { useMemo, useRef, useState } from 'react'
-import { useFrame } from '@react-three/fiber'
-import * as THREE from 'three'
+import { useState } from 'react'
 import './App.css'
 
 const xrStore = createXRStore()
