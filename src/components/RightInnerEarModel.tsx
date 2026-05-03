@@ -216,8 +216,9 @@ export function RightInnerEarModel() {
 
     group.position
       .copy(cameraPosition)
-      .add(cameraForward.multiplyScalar(2.6))
-      .add(cameraUp.multiplyScalar(-0.08))
+      .add(cameraForward.multiplyScalar(1.85))
+      .add(cameraUp.multiplyScalar(0.02))
+    // Keep local Z+ posterior facing the viewer, so the model is seen from behind.
     group.quaternion.copy(cameraQuaternion)
   })
 

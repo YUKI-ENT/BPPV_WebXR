@@ -30,9 +30,9 @@ function HeadPoseDebug({
     camera.getWorldQuaternion(quaternion.current)
     euler.current.setFromQuaternion(quaternion.current, 'YXZ')
     onChange({
-      x: THREE.MathUtils.radToDeg(euler.current.x),
-      y: THREE.MathUtils.radToDeg(euler.current.y),
-      z: THREE.MathUtils.radToDeg(euler.current.z),
+      x: euler.current.x,
+      y: euler.current.y,
+      z: euler.current.z,
     })
     lastUpdate.current = elapsed
   })
@@ -40,9 +40,50 @@ function HeadPoseDebug({
   return null
 }
 
+function ViewLockedDebugText({ angles }: { angles: HeadAngles }) {
+  const groupRef = useRef<THREE.Group>(null)
+  const cameraPosition = useRef(new THREE.Vector3())
+  const cameraQuaternion = useRef(new THREE.Quaternion())
+  const cameraForward = useRef(new THREE.Vector3())
+  const cameraUp = useRef(new THREE.Vector3())
+
+  useFrame(({ camera }) => {
+    const group = groupRef.current
+    if (!group) return
+
+    camera.getWorldPosition(cameraPosition.current)
+    camera.getWorldQuaternion(cameraQuaternion.current)
+    cameraForward.current.set(0, 0, -1).applyQuaternion(cameraQuaternion.current)
+    cameraUp.current.set(0, 1, 0).applyQuaternion(cameraQuaternion.current)
+
+    group.position
+      .copy(cameraPosition.current)
+      .add(cameraForward.current.multiplyScalar(1.15))
+      .add(cameraUp.current.multiplyScalar(-0.42))
+    group.quaternion.copy(cameraQuaternion.current)
+  })
+
+  return (
+    <group ref={groupRef}>
+      <Text
+        fontSize={0.075}
+        color="white"
+        anchorX="center"
+        anchorY="middle"
+        outlineColor="#111827"
+        outlineWidth={0.006}
+      >
+        {`X: ${angles.x.toFixed(2)} Y: ${angles.y.toFixed(2)} Z: ${angles.z.toFixed(2)}`}
+      </Text>
+    </group>
+  )
+}
+
 function Scene({
+  headAngles,
   onHeadAnglesChange,
 }: {
+  headAngles: HeadAngles
   onHeadAnglesChange: (angles: HeadAngles) => void
 }) {
   return (
@@ -50,6 +91,7 @@ function Scene({
       <ambientLight intensity={0.8} />
       <directionalLight position={[5, 8, 5]} intensity={1.2} />
       <HeadPoseDebug onChange={onHeadAnglesChange} />
+      <ViewLockedDebugText angles={headAngles} />
 
       <Grid
         args={[40, 40]}
@@ -104,9 +146,9 @@ export default function App() {
         <div>Right inner ear model, posterior canal otolith, grid, and XYZ axes.</div>
         <div className="debug-pose">
           <div>Head angle debug</div>
-          <div>X: {headAngles.x.toFixed(1)} deg</div>
-          <div>Y: {headAngles.y.toFixed(1)} deg</div>
-          <div>Z: {headAngles.z.toFixed(1)} deg</div>
+          <div>X: {THREE.MathUtils.radToDeg(headAngles.x).toFixed(1)} deg</div>
+          <div>Y: {THREE.MathUtils.radToDeg(headAngles.y).toFixed(1)} deg</div>
+          <div>Z: {THREE.MathUtils.radToDeg(headAngles.z).toFixed(1)} deg</div>
         </div>
         {vrError && <p className="error">{vrError}</p>}
       </div>
@@ -114,7 +156,7 @@ export default function App() {
       <Canvas camera={{ position: [0, 1.6, 4], fov: 65 }}>
         <color attach="background" args={['#111827']} />
         <XR store={xrStore}>
-          <Scene onHeadAnglesChange={setHeadAngles} />
+          <Scene headAngles={headAngles} onHeadAnglesChange={setHeadAngles} />
         </XR>
       </Canvas>
     </div>
