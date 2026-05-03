@@ -73,107 +73,47 @@ function MarkerSphere({
   )
 }
 
-function makeEllipseArc(
-  center: THREE.Vector3,
-  axisU: THREE.Vector3,
-  axisV: THREE.Vector3,
-  radiusU: number,
-  radiusV: number,
-  startDeg: number,
-  endDeg: number,
-  segments: number
-) {
-  const points: THREE.Vector3[] = []
-  const start = THREE.MathUtils.degToRad(startDeg)
-  const end = THREE.MathUtils.degToRad(endDeg)
-
-  for (let i = 0; i <= segments; i += 1) {
-    const t = i / segments
-    const angle = start + (end - start) * t
-
-    points.push(
-      center
-        .clone()
-        .add(axisU.clone().multiplyScalar(Math.cos(angle) * radiusU))
-        .add(axisV.clone().multiplyScalar(Math.sin(angle) * radiusV))
-    )
-  }
-
-  return points
-}
-
 function makeCurve(points: THREE.Vector3[]) {
   return new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.35)
-}
-
-function translatePointsToEnd(points: THREE.Vector3[], target: THREE.Vector3) {
-  const delta = target.clone().sub(points[points.length - 1])
-  return points.map((point) => point.clone().add(delta))
 }
 
 export function RightInnerEarModel() {
   const model = useMemo(() => {
     // Coordinate system: X+ patient right, Y+ up, Z+ posterior, Z- anterior.
     const utricle = new THREE.Vector3(0, 0, 0)
-    const commonCrus = new THREE.Vector3(0.0, 0.56, 0.0)
-    const lateralUtricleEndTarget = new THREE.Vector3(0.64, 0.02, 0.0)
-    const posteriorUtricleEndTarget = new THREE.Vector3(-0.08, 0.28, 0.44)
-    const anteriorUtricleEndTarget = new THREE.Vector3(0.08, 0.28, -0.44)
-    const posteriorAmpullaPort = new THREE.Vector3(-0.22, -0.02, 0.34)
-    const anteriorAmpullaPort = new THREE.Vector3(0.22, -0.02, -0.34)
+    const lateralAmpullaPort = new THREE.Vector3(0.26, -0.04, -0.12)
+    const lateralUtricleEnd = new THREE.Vector3(0.24, 0.02, 0.16)
+    const posteriorAmpullaPort = new THREE.Vector3(0.08, -0.04, 0.24)
+    const posteriorUtricleEnd = new THREE.Vector3(0.02, 0.1, 0.1)
+    const anteriorAmpullaPort = new THREE.Vector3(0.08, -0.04, -0.24)
+    const anteriorUtricleEnd = new THREE.Vector3(0.02, 0.1, -0.1)
 
-    const lateralTilt = THREE.MathUtils.degToRad(28)
-    const lateralAxisU = new THREE.Vector3(1, 0, 0).normalize()
-    const lateralAxisV = new THREE.Vector3(
-      0,
-      -Math.sin(lateralTilt),
-      Math.cos(lateralTilt)
-    ).normalize()
-    const lateralPoints = translatePointsToEnd(
-      makeEllipseArc(
-        new THREE.Vector3(0.72, 0.04, 0.0),
-        lateralAxisU,
-        lateralAxisV,
-        0.5,
-        0.46,
-        210,
-        -55,
-        72
-      ),
-      lateralUtricleEndTarget
-    )
+    const lateralPoints = [
+      lateralAmpullaPort,
+      new THREE.Vector3(0.62, -0.11, -0.42),
+      new THREE.Vector3(1.28, -0.24, -0.06),
+      new THREE.Vector3(1.18, -0.18, 0.28),
+      new THREE.Vector3(0.58, -0.08, 0.46),
+      lateralUtricleEnd,
+    ]
 
-    const posteriorAxisU = new THREE.Vector3(0.44, 0, 0.9).normalize()
-    const posteriorAxisV = new THREE.Vector3(0, 1, 0).normalize()
-    const posteriorPoints = translatePointsToEnd(
-      makeEllipseArc(
-        new THREE.Vector3(-0.02, 0.2, 0.54),
-        posteriorAxisU,
-        posteriorAxisV,
-        0.52,
-        0.82,
-        -125,
-        215,
-        88
-      ),
-      posteriorUtricleEndTarget
-    )
+    const posteriorPoints = [
+      posteriorAmpullaPort,
+      new THREE.Vector3(0.36, 0.14, 0.58),
+      new THREE.Vector3(0.62, 0.72, 0.74),
+      new THREE.Vector3(0.5, 1.08, 0.38),
+      new THREE.Vector3(0.22, 0.72, 0.12),
+      posteriorUtricleEnd,
+    ]
 
-    const anteriorAxisU = new THREE.Vector3(0.44, 0, -0.9).normalize()
-    const anteriorAxisV = new THREE.Vector3(0, 1, 0).normalize()
-    const anteriorPoints = translatePointsToEnd(
-      makeEllipseArc(
-        new THREE.Vector3(0.02, 0.2, -0.54),
-        anteriorAxisU,
-        anteriorAxisV,
-        0.52,
-        0.82,
-        -125,
-        215,
-        88
-      ),
-      anteriorUtricleEndTarget
-    )
+    const anteriorPoints = [
+      anteriorAmpullaPort,
+      new THREE.Vector3(0.54, 0.12, -0.42),
+      new THREE.Vector3(0.86, 0.7, -0.34),
+      new THREE.Vector3(0.58, 1.08, -0.06),
+      new THREE.Vector3(0.22, 0.72, -0.02),
+      anteriorUtricleEnd,
+    ]
 
     const lateralCurve = makeCurve(lateralPoints)
     const posteriorCurve = makeCurve(posteriorPoints)
@@ -183,13 +123,11 @@ export function RightInnerEarModel() {
 
     return {
       utricle,
-      commonCrus,
       lateralCurve,
       posteriorCurve,
       anteriorCurve,
       lateralAmpulla: lateralCurve.getPoint(0),
       lateralUtricleEnd: lateralCurve.getPoint(1),
-      lateralUtricleEndTarget,
       posteriorAmpulla: posteriorCurve.getPoint(0),
       posteriorUtricleEnd: posteriorCurve.getPoint(1),
       posteriorAmpullaPort,
@@ -245,29 +183,16 @@ export function RightInnerEarModel() {
         Utricle
       </Text>
 
-      <MarkerSphere position={model.commonCrus} color="#fb923c" radius={0.085} />
-      <Text
-        position={model.commonCrus.clone().add(new THREE.Vector3(0.08, 0.16, 0))}
-        fontSize={0.075}
-        color="#fb923c"
-        anchorX="left"
-      >
-        common crus
-      </Text>
-
       <Tube curve={model.lateralCurve} color="#22c55e" radius={0.062} opacity={0.43} />
       <Tube curve={model.posteriorCurve} color="#3b82f6" radius={0.068} opacity={0.45} />
       <Tube curve={model.anteriorCurve} color="#ef4444" radius={0.062} opacity={0.4} />
 
       <ConnectorTube from={model.lateralUtricleEnd} to={model.utricle} color="#22c55e" />
       <ConnectorTube from={model.lateralAmpulla} to={model.utricle} color="#22c55e" opacity={0.2} />
-      <ConnectorTube from={model.posteriorAmpulla} to={model.posteriorAmpullaPort} color="#3b82f6" />
       <ConnectorTube from={model.posteriorAmpullaPort} to={model.utricle} color="#3b82f6" opacity={0.24} />
-      <ConnectorTube from={model.posteriorUtricleEnd} to={model.commonCrus} color="#3b82f6" />
-      <ConnectorTube from={model.anteriorAmpulla} to={model.anteriorAmpullaPort} color="#ef4444" />
+      <ConnectorTube from={model.posteriorUtricleEnd} to={model.utricle} color="#3b82f6" opacity={0.38} />
       <ConnectorTube from={model.anteriorAmpullaPort} to={model.utricle} color="#ef4444" opacity={0.24} />
-      <ConnectorTube from={model.anteriorUtricleEnd} to={model.commonCrus} color="#ef4444" />
-      <ConnectorTube from={model.commonCrus} to={model.utricle} color="#fb923c" radius={0.05} opacity={0.38} />
+      <ConnectorTube from={model.anteriorUtricleEnd} to={model.utricle} color="#ef4444" opacity={0.38} />
 
       <MarkerSphere position={model.lateralAmpulla} color="#86efac" radius={0.105} />
       <MarkerSphere position={model.posteriorAmpulla} color="#93c5fd" radius={0.11} />
